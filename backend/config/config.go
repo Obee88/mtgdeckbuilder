@@ -14,10 +14,9 @@ type Config struct {
 }
 
 func Load() *Config {
-	isProd := os.Getenv("ENV") == "prod"
 	mongoURI := "mongodb://localhost:27017"
-	if isProd {
-		mongoURI = os.Getenv("DB_URI")
+	if uri := os.Getenv("MONGODB_URI"); uri != "" {
+		mongoURI = uri
 	}
 	jwtSecret := os.Getenv("JWT_SECRET")
 	if jwtSecret == "" {
@@ -31,6 +30,7 @@ func Load() *Config {
 	if raw := os.Getenv("ALLOWED_ORIGINS"); raw != "" {
 		allowedOrigins = strings.Split(raw, ",")
 	}
+	isProd := os.Getenv("NODE_ENV") == "production"
 	return &Config{
 		MongoURI:       mongoURI,
 		JWTSecret:      jwtSecret,

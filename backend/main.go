@@ -106,13 +106,14 @@ func main() {
 		}
 	}
 
-	// Serve React SPA: serve static files from ./dist, fallback to index.html
+	// Serve React SPA: serve static files from /app/frontend/dist, fallback to index.html
+	const distDir = "/app/frontend/dist"
 	r.NoRoute(func(c *gin.Context) {
-		filePath := "./dist" + c.Request.URL.Path
+		filePath := distDir + c.Request.URL.Path
 		if info, err := os.Stat(filePath); err == nil && !info.IsDir() {
 			c.File(filePath)
 		} else {
-			c.File("./dist/index.html")
+			c.File(distDir + "/index.html")
 		}
 	})
 
