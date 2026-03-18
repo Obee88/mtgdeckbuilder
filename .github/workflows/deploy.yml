@@ -22,21 +22,12 @@ jobs:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
 
-      - name: Build and push backend image
+      - name: Build and push app image
         uses: docker/build-push-action@v5
         with:
-          context: ./backend
+          context: .
           push: true
-          tags: ${{ secrets.DOCKERHUB_USERNAME }}/mtgdeckbuilder-backend:latest
-
-      - name: Build and push frontend image
-        uses: docker/build-push-action@v5
-        with:
-          context: ./frontend
-          push: true
-          tags: ${{ secrets.DOCKERHUB_USERNAME }}/mtgdeckbuilder-frontend:latest
-          build-args: |
-            VITE_API_URL=${{ secrets.VITE_API_URL }}
+          tags: ${{ secrets.DOCKERHUB_USERNAME }}/mtgdeckbuilder:latest
 
       - name: Deploy to Server via SSH
         uses: appleboy/ssh-action@v1.0.0
@@ -45,29 +36,17 @@ jobs:
           username: ${{ secrets.SSH_USERNAME }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           script: |
-            # Backend
-            docker stop mtgdeckbuilder-backend || true
-            docker rm mtgdeckbuilder-backend || true
-            docker pull ${{ secrets.DOCKERHUB_USERNAME }}/mtgdeckbuilder-backend:latest
+            docker stop mtgdeckbuilder || true
+            docker rm mtgdeckbuilder || true
+            docker pull ${{ secrets.DOCKERHUB_USERNAME }}/mtgdeckbuilder:latest
             docker run -d \
-              --name mtgdeckbuilder-backend \
+              --name mtgdeckbuilder \
               --net ${{ secrets.DOCKER_NETWORK }} \
-              -p 8090:8090 \
+              -p 3001:8090 \
               -e ENV=prod \
               -e PORT=8090 \
               -e JWT_SECRET=${{ secrets.JWT_SECRET }} \
               -e DB_URI=${{ secrets.DB_URI }} \
-              -e ALLOWED_ORIGINS=${{ secrets.ALLOWED_ORIGINS }} \
-              ${{ secrets.DOCKERHUB_USERNAME }}/mtgdeckbuilder-backend:latest
-
-            # Frontend
-            docker stop mtgdeckbuilder-frontend || true
-            docker rm mtgdeckbuilder-frontend || true
-            docker pull ${{ secrets.DOCKERHUB_USERNAME }}/mtgdeckbuilder-frontend:latest
-            docker run -d \
-              --name mtgdeckbuilder-frontend \
-              --net ${{ secrets.DOCKER_NETWORK }} \
-              -p 3001:80 \
-              ${{ secrets.DOCKERHUB_USERNAME }}/mtgdeckbuilder-frontend:latest
+              ${{ secrets.DOCKERHUB_USERNAME }}/mtgdeckbuilder:latest
 
             docker image prune -f

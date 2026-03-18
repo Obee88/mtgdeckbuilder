@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"log"
+	"os"
 	"time"
 
 	"mtgdeckbuilder/config"
@@ -104,6 +105,16 @@ func main() {
 			admin.DELETE("/banlist/:id", handlers.AdminUnbanCard)
 		}
 	}
+
+	// Serve React SPA: serve static files from ./dist, fallback to index.html
+	r.NoRoute(func(c *gin.Context) {
+		filePath := "./dist" + c.Request.URL.Path
+		if info, err := os.Stat(filePath); err == nil && !info.IsDir() {
+			c.File(filePath)
+		} else {
+			c.File("./dist/index.html")
+		}
+	})
 
 	log.Printf("Server running on :%s", cfg.Port)
 	r.Run(":" + cfg.Port)
