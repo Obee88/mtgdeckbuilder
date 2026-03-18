@@ -1,0 +1,31 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "Backend: Run",
+      "type": "go",
+      "request": "launch",
+      "mode": "auto",
+      "program": "${workspaceFolder}/backend",
+      "cwd": "${workspaceFolder}/backend",
+      "env": {
+        "PORT": "8090"
+      },
+      "args": []
+    },
+    {
+      "name": "Backend: Run (prod DB)",
+      "type": "go",
+      "request": "launch",
+      "mode": "auto",
+      "program": "${workspaceFolder}/backend",
+      "cwd": "${workspaceFolder}/backend",
+      "env": {
+        "PORT": "8090",
+        "ENV": "prod",
+        "DB_URI": "${env:DB_URI}"
+      },
+      "args": []
+    }
+  ]
+}
