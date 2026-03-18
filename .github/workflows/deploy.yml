@@ -43,9 +43,9 @@ jobs:
             docker run -d \
               --name mtgdeckbuilder \
               --net "$DOCKER_NETWORK" \
-              -p 3001:8080 \
+              -p 3001:3001 \
               -e NODE_ENV=production \
-              -e PORT=8080 \
+              -e PORT=3001 \
               -e JWT_SECRET="$JWT_SECRET" \
               -e MONGODB_URI="$MONGODB_URI" \
               "$DOCKERHUB_USERNAME/mtgdeckbuilder:latest"
