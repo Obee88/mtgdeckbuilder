@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import api from '../api'
 import toast from 'react-hot-toast'
-import { Shield, ShieldOff, Ban, Trash2, Plus } from 'lucide-react'
+import { Shield, ShieldOff, Ban, Trash2, Plus, AlertTriangle } from 'lucide-react'
 
 interface MTGSet { id: string; code: string; set_name: string; enabled: boolean }
 interface BannedCard { id: string; card_name: string; reason: string; banned_at: string }
@@ -15,6 +15,8 @@ export default function Settings() {
   const [banInput, setBanInput] = useState('')
   const [tab, setTab] = useState<'sets' | 'banlist' | 'users'>('sets')
   const [seed, setSeed] = useState<SeedStatus | null>(null)
+  const [resetting, setResetting] = useState(false)
+  const [resetConfirm, setResetConfirm] = useState(false)
 
   async function fetchAll() {
     const [setsRes, bansRes, usersRes, seedRes] = await Promise.all([
@@ -75,6 +77,23 @@ export default function Settings() {
     toast.success('Card unbanned')
   }
 
+  async function resetDB() {
+    if (!resetConfirm) {
+      setResetConfirm(true)
+      return
+    }
+    setResetting(true)
+    try {
+      await api.post('/admin/reset-db')
+      toast.success('Database reset — all cards, decks, boosters and lists cleared')
+      setResetConfirm(false)
+    } catch (err: any) {
+      toast.error(err.response?.data?.error || 'Reset failed')
+    } finally {
+      setResetting(false)
+    }
+  }
+
   async function toggleAdmin(u: AdminUser) {
     await api.put(`/admin/users/${u.id}/admin`, { is_admin: !u.is_admin })
     setUsers((prev) => prev.map((x) => x.id === u.id ? { ...x, is_admin: !x.is_admin } : x))
@@ -89,6 +108,34 @@ export default function Settings() {
   return (
     <div>
       <h2 className="text-2xl font-bold mb-4">Admin Settings</h2>
+
+      {/* Danger Zone */}
+      <div className="mb-6 border border-red-800 rounded-xl p-4 bg-red-950/20 max-w-xl">
+        <div className="flex items-center gap-2 mb-2">
+          <AlertTriangle size={16} className="text-red-400" />
+          <span className="text-sm font-semibold text-red-400">Danger Zone</span>
+        </div>
+        <p className="text-xs text-gray-400 mb-3">
+          Resets all opened boosters, cards, decks, and lists for every user. JAD balances and trades are also cleared. User accounts are preserved.
+        </p>
+        <button
+          onClick={resetDB}
+          disabled={resetting}
+          className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors disabled:opacity-50 ${
+            resetConfirm
+              ? 'bg-red-600 hover:bg-red-500 text-white animate-pulse'
+              : 'bg-gray-800 hover:bg-red-900 border border-red-800 text-red-400'
+          }`}
+        >
+          <AlertTriangle size={14} />
+          {resetting ? 'Resetting…' : resetConfirm ? 'Click again to confirm reset' : 'Reset Database'}
+        </button>
+        {resetConfirm && !resetting && (
+          <button onClick={() => setResetConfirm(false)} className="ml-2 text-xs text-gray-500 hover:text-gray-300 underline">
+            Cancel
+          </button>
+        )}
+      </div>
 
       {seed && !seed.done && (
         <div className="bg-yellow-900/30 border border-yellow-700 rounded-xl px-4 py-3 mb-6 text-sm text-yellow-300 max-w-xl">

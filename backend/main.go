@@ -92,6 +92,13 @@ func main() {
 		auth.GET("/users", handlers.GetAllUsers)
 		auth.GET("/users/:userId/cards", handlers.GetUserCards)
 
+		// Lists
+		auth.GET("/lists", handlers.GetLists)
+		auth.POST("/lists", handlers.CreateList)
+		auth.DELETE("/lists/:id", handlers.DeleteList)
+		auth.POST("/lists/:id/cards", handlers.AddCardToList)
+		auth.DELETE("/lists/:id/cards", handlers.RemoveCardFromList)
+
 		// Admin
 		admin := auth.Group("/admin", middleware.AdminOnly())
 		{
@@ -103,6 +110,7 @@ func main() {
 			admin.GET("/banlist", handlers.AdminGetBanlist)
 			admin.POST("/banlist", handlers.AdminBanCard)
 			admin.DELETE("/banlist/:id", handlers.AdminUnbanCard)
+			admin.POST("/reset-db", handlers.AdminResetDB)
 		}
 	}
 

@@ -1,11 +1,12 @@
 import { NavLink, Outlet } from 'react-router-dom'
 import { useAuth } from './AuthContext'
-import { PackageOpen, Layers, CreditCard, ArrowLeftRight, Store, Settings, LogOut, Coins } from 'lucide-react'
+import { PackageOpen, Layers, CreditCard, ArrowLeftRight, Store, Settings, LogOut, Coins, BookMarked } from 'lucide-react'
 
 const navItems = [
   { to: '/boosters', label: 'Boosters', icon: PackageOpen },
   { to: '/decks', label: 'Decks', icon: Layers },
   { to: '/cards', label: 'Cards', icon: CreditCard },
+  { to: '/lists', label: 'Lists', icon: BookMarked },
   { to: '/trade', label: 'Trade', icon: ArrowLeftRight },
   { to: '/market', label: 'Market', icon: Store },
 ]

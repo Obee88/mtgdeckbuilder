@@ -16,6 +16,7 @@ interface BoosterCard {
 }
 
 interface Deck { id: string; name: string; cards: { card_id: string }[] }
+interface CardList { id: string; name: string; card_names: string[] }
 interface BoosterStatus { available: number; next_booster: string }
 interface SeedStatus { done: boolean; message: string }
 
@@ -50,24 +51,29 @@ function Countdown({ target }: { target: string }) {
   return <span>{diff}</span>
 }
 
-function CardActions({ card, decks, onRecycle }: {
+function CardActions({ card, decks, lists, onRecycle }: {
   card: BoosterCard
   decks: Deck[]
+  lists: CardList[]
   onRecycle: (cardId: string) => void
 }) {
-  const [open, setOpen] = useState(false)
-  const ref = useRef<HTMLDivElement>(null)
+  const [deckOpen, setDeckOpen] = useState(false)
+  const [listOpen, setListOpen] = useState(false)
+  const deckRef = useRef<HTMLDivElement>(null)
+  const listRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
-    if (!open) return
+    if (!deckOpen && !listOpen) return
     function handler(e: MouseEvent) {
-      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false)
+      if (deckRef.current && !deckRef.current.contains(e.target as Node)) setDeckOpen(false)
+      if (listRef.current && !listRef.current.contains(e.target as Node)) setListOpen(false)
     }
     document.addEventListener('mousedown', handler)
     return () => document.removeEventListener('mousedown', handler)
-  }, [open])
+  }, [deckOpen, listOpen])
 
   const inDecks = decks.filter(d => d.cards.some(c => c.card_id === card.card_id))
+  const inLists = lists.filter(l => l.card_names.includes(card.card_name))
 
   async function addToDeck(deck: Deck) {
     try {
@@ -77,9 +83,19 @@ function CardActions({ card, decks, onRecycle }: {
         image_uri: card.image_uri,
       })
       toast.success(`Added to "${deck.name}"`)
-      setOpen(false)
+      setDeckOpen(false)
     } catch (err: any) {
       toast.error(err.response?.data?.error || 'Failed to add to deck')
+    }
+  }
+
+  async function addToList(list: CardList) {
+    try {
+      await api.post(`/lists/${list.id}/cards`, { card_name: card.card_name })
+      toast.success(`Added to list "${list.name}"`)
+      setListOpen(false)
+    } catch (err: any) {
+      toast.error(err.response?.data?.error || 'Failed to add to list')
     }
   }
 
@@ -95,6 +111,11 @@ function CardActions({ card, decks, onRecycle }: {
           In: {inDecks.map(d => d.name).join(', ')}
         </p>
       )}
+      {inLists.length > 0 && (
+        <p className="text-xs text-teal-400 truncate">
+          Lists: {inLists.map(l => l.name).join(', ')}
+        </p>
+      )}
 
       <div className="flex gap-1 pt-1">
         {/* Recycle */}
@@ -107,14 +128,14 @@ function CardActions({ card, decks, onRecycle }: {
         </button>
 
         {/* Add to deck */}
-        <div className="relative flex-1" ref={ref}>
+        <div className="relative flex-1" ref={deckRef}>
           <button
-            onClick={() => setOpen(o => !o)}
+            onClick={() => { setDeckOpen(o => !o); setListOpen(false) }}
             className="w-full flex items-center justify-center gap-1 py-1 rounded-lg bg-gray-700 hover:bg-purple-700 text-xs text-gray-300 hover:text-white transition-colors"
           >
             Deck <ChevronDown size={10} />
           </button>
-          {open && (
+          {deckOpen && (
             <div className="absolute bottom-full mb-1 left-0 z-20 bg-gray-800 border border-gray-600 rounded-xl shadow-xl min-w-36 max-h-48 overflow-y-auto">
               {decks.length === 0
                 ? <p className="text-xs text-gray-500 px-3 py-2">No decks yet</p>
@@ -125,6 +146,32 @@ function CardActions({ card, decks, onRecycle }: {
                     className="w-full text-left px-3 py-2 text-xs hover:bg-gray-700 truncate"
                   >
                     {d.name}
+                  </button>
+                ))
+              }
+            </div>
+          )}
+        </div>
+
+        {/* Add to list */}
+        <div className="relative flex-1" ref={listRef}>
+          <button
+            onClick={() => { setListOpen(o => !o); setDeckOpen(false) }}
+            className="w-full flex items-center justify-center gap-1 py-1 rounded-lg bg-gray-700 hover:bg-teal-700 text-xs text-gray-300 hover:text-white transition-colors"
+          >
+            List <ChevronDown size={10} />
+          </button>
+          {listOpen && (
+            <div className="absolute bottom-full mb-1 left-0 z-20 bg-gray-800 border border-gray-600 rounded-xl shadow-xl min-w-36 max-h-48 overflow-y-auto">
+              {lists.length === 0
+                ? <p className="text-xs text-gray-500 px-3 py-2">No lists yet</p>
+                : lists.map(l => (
+                  <button
+                    key={l.id}
+                    onClick={() => addToList(l)}
+                    className="w-full text-left px-3 py-2 text-xs hover:bg-gray-700 truncate"
+                  >
+                    {l.name}
                   </button>
                 ))
               }
@@ -143,6 +190,8 @@ export default function Boosters() {
   const [opening, setOpening] = useState(false)
   const [cards, setCards] = useState<BoosterCard[]>([])
   const [decks, setDecks] = useState<Deck[]>([])
+  const [lists, setLists] = useState<CardList[]>([])
+  const [recycledIds, setRecycledIds] = useState<Set<string>>(new Set())
 
   async function fetchStatus() {
     const res = await api.get('/boosters')
@@ -151,6 +200,10 @@ export default function Boosters() {
   async function fetchDecks() {
     const res = await api.get('/decks')
     setDecks(res.data)
+  }
+  async function fetchLists() {
+    const res = await api.get('/lists')
+    setLists(res.data)
   }
   async function fetchSeedStatus() {
     const res = await api.get('/seed-status')
@@ -161,6 +214,7 @@ export default function Boosters() {
   useEffect(() => {
     fetchStatus()
     fetchDecks()
+    fetchLists()
     fetchSeedStatus().then((s) => {
       if (!s.done) {
         const id = setInterval(async () => {
@@ -174,6 +228,7 @@ export default function Boosters() {
 
   async function openBooster() {
     setOpening(true)
+    setRecycledIds(new Set())
     try {
       const res = await api.post('/boosters/open')
       setCards(res.data.cards ?? [])
@@ -190,6 +245,7 @@ export default function Boosters() {
   async function recycle(userCardId: string) {
     try {
       await api.post(`/cards/${userCardId}/recycle`)
+      setRecycledIds((prev) => new Set(prev).add(userCardId))
       toast.success('Recycled for 1 JAD')
       refreshUser()
     } catch (err: any) {
@@ -233,22 +289,35 @@ export default function Boosters() {
         <div>
           <h3 className="text-lg font-semibold mb-4">You received:</h3>
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3">
-            {cards.map((card, i) => (
-              <div
-                key={i}
-                className={`rounded-xl overflow-hidden border-2 ${rarityColor[card.rarity] ?? 'border-gray-700'} bg-gray-900`}
-              >
-                {card.image_uri
-                  ? <CardImage src={card.image_uri} alt={card.card_name} className="w-full" />
-                  : <div className="aspect-[2/3] bg-gray-800 flex items-center justify-center p-2 text-xs text-center text-gray-400">{card.card_name}</div>
-                }
-                <CardActions
-                  card={card}
-                  decks={decks}
-                  onRecycle={recycle}
-                />
-              </div>
-            ))}
+            {cards.map((card, i) => {
+              const recycled = recycledIds.has(card.id)
+              return (
+                <div
+                  key={i}
+                  className={`rounded-xl overflow-hidden border-2 ${rarityColor[card.rarity] ?? 'border-gray-700'} bg-gray-900 relative`}
+                >
+                  {card.image_uri
+                    ? <CardImage src={card.image_uri} alt={card.card_name} className="w-full" />
+                    : <div className="aspect-[2/3] bg-gray-800 flex items-center justify-center p-2 text-xs text-center text-gray-400">{card.card_name}</div>
+                  }
+
+                  {/* Recycled overlay */}
+                  {recycled && (
+                    <div className="absolute inset-0 bg-gray-950/70 flex flex-col items-center justify-center gap-1 pointer-events-none">
+                      <Recycle size={24} className="text-green-400 opacity-90" />
+                      <span className="text-xs font-semibold text-green-400">Recycled</span>
+                    </div>
+                  )}
+
+                  <CardActions
+                    card={card}
+                    decks={decks}
+                    lists={lists}
+                    onRecycle={recycle}
+                  />
+                </div>
+              )
+            })}
           </div>
         </div>
       )}

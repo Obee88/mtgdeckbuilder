@@ -132,6 +132,16 @@ type TradeCard struct {
 	Quantity   int                `bson:"quantity" json:"quantity"`
 }
 
+// ─── Card List ────────────────────────────────────────────────────────────────
+
+type CardList struct {
+	ID        primitive.ObjectID `bson:"_id,omitempty" json:"id"`
+	UserID    primitive.ObjectID `bson:"user_id" json:"user_id"`
+	Name      string             `bson:"name" json:"name"`
+	CardNames []string           `bson:"card_names" json:"card_names"`
+	CreatedAt time.Time          `bson:"created_at" json:"created_at"`
+}
+
 // ─── Ban ──────────────────────────────────────────────────────────────────────
 
 type BannedCard struct {

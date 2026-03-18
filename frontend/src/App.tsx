@@ -9,6 +9,7 @@ import Cards from './pages/Cards'
 import Trade from './pages/Trade'
 import Market from './pages/Market'
 import Settings from './pages/Settings'
+import Lists from './pages/Lists'
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { user, token } = useAuth()
@@ -40,6 +41,7 @@ function AppRoutes() {
         <Route path="boosters" element={<Boosters />} />
         <Route path="decks" element={<Decks />} />
         <Route path="cards" element={<Cards />} />
+        <Route path="lists" element={<Lists />} />
         <Route path="trade" element={<Trade />} />
         <Route path="market" element={<Market />} />
         <Route

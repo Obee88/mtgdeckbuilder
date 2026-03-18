@@ -138,6 +138,23 @@ func AdminUnbanCard(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"ok": true})
 }
 
+// ─── Reset DB ─────────────────────────────────────────────────────────────────
+
+// AdminResetDB deletes all user-owned data (cards, decks, booster history, lists)
+// but keeps users and the master card/set/ban data intact.
+func AdminResetDB(c *gin.Context) {
+	ctx := context.Background()
+	db.Col("user_cards").DeleteMany(ctx, bson.M{})
+	db.Col("decks").DeleteMany(ctx, bson.M{})
+	db.Col("booster_history").DeleteMany(ctx, bson.M{})
+	db.Col("card_lists").DeleteMany(ctx, bson.M{})
+	db.Col("market").DeleteMany(ctx, bson.M{})
+	db.Col("trades").DeleteMany(ctx, bson.M{})
+	// Reset JAD and locked JAD for all users
+	db.Col("users").UpdateMany(ctx, bson.M{}, bson.M{"$set": bson.M{"jad": 0, "jad_locked": 0, "boosters_opened": 0}})
+	c.JSON(http.StatusOK, gin.H{"ok": true})
+}
+
 // ─── Format presets ───────────────────────────────────────────────────────────
 
 type scryfallSetEntry struct {
